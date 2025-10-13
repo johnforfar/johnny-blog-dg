@@ -1,0 +1,65 @@
+# Environment variables (NEVER commit these)
+.env
+.env.local
+.env.production
+
+# Private keys (NEVER commit these)
+*.key
+*.pem
+age-key.txt
+age-key.txt.age
+
+# Unencrypted data (NEVER commit these)
+data/**/*.md
+data/**/*.mdx
+data/**/*.jpg
+data/**/*.jpeg
+data/**/*.png
+data/**/*.webp
+data/**/*.gif
+data/**/*.svg
+data/**/*.sql
+data/**/*.db
+data/**/*.json
+
+# Only commit encrypted chunks
+!data/**/*.age.zst
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Logs
+logs/
+*.log
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
