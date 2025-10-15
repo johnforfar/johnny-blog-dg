@@ -9,9 +9,16 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs-extra');
 const { execSync } = require('child_process');
+const OllamaClient = require('./ollama-client');
 
 const app = express();
 const PORT = process.env.DATAGRAPH_PORT || 3007;
+
+// Initialize Ollama client
+const ollama = new OllamaClient(
+  process.env.OLLAMA_API_URL || 'http://localhost:11434',
+  process.env.OLLAMA_MODEL || 'llama3.2:3b'
+);
 
 // Middleware
 app.use(cors());
@@ -293,12 +300,93 @@ app.get('/api/images/:filename', async (req, res) => {
   }
 });
 
+// Ollama AI endpoints
+app.get('/api/ai/health', async (req, res) => {
+  try {
+    const health = await ollama.healthCheck();
+    res.json(health);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Ollama service unavailable',
+      details: error.message 
+    });
+  }
+});
+
+app.get('/api/ai/models', async (req, res) => {
+  try {
+    const models = await ollama.listModels();
+    res.json(models);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to list models',
+      details: error.message 
+    });
+  }
+});
+
+app.post('/api/ai/chat', async (req, res) => {
+  try {
+    const { messages, model, options } = req.body;
+    
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Messages array is required' 
+      });
+    }
+    
+    const result = await ollama.chat(messages, { 
+      model: model || ollama.model,
+      ...options 
+    });
+    
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Chat request failed',
+      details: error.message 
+    });
+  }
+});
+
+app.post('/api/ai/generate', async (req, res) => {
+  try {
+    const { prompt, model, options } = req.body;
+    
+    if (!prompt) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Prompt is required' 
+      });
+    }
+    
+    const result = await ollama.generate(prompt, { 
+      model: model || ollama.model,
+      ...options 
+    });
+    
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: 'Generate request failed',
+      details: error.message 
+    });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Datagraph API running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
   console.log(`🔍 Metadata: http://localhost:${PORT}/api/metadata/posts`);
   console.log(`🔒 Content: http://localhost:${PORT}/api/posts/:slug`);
+  console.log(`🤖 AI Chat: http://localhost:${PORT}/api/ai/chat`);
+  console.log(`🧠 AI Generate: http://localhost:${PORT}/api/ai/generate`);
 });
 
 module.exports = app;
