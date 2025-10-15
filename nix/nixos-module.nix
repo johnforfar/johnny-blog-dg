@@ -139,30 +139,6 @@ in
 
     # Monitoring
     services.prometheus.exporters.node.enabled = true;
-    
-    # Backup configuration
-    services.johnny-blog-dg-backup = {
-      description = "Backup datagraph to GitHub";
-      wantedBy = [ "multi-user.target" ];
-      after = [ "johnny-blog-datagraph.service" ];
-      
-      serviceConfig = {
-        Type = "oneshot";
-        User = cfg.user;
-        Group = cfg.group;
-        WorkingDirectory = cfg.dataDir;
-        ExecStart = "${pkgs.johnny-blog-datagraph}/bin/johnny-blog-dg-backup";
-      };
-    };
-    
-    systemd.timers.johnny-blog-dg-backup = {
-      description = "Backup datagraph to GitHub";
-      wantedBy = [ "timers.target" ];
-      timerConfig = {
-        OnBootSec = "5min";
-        OnUnitActiveSec = "1h";
-      };
-    };
   };
 }
 

@@ -54,6 +54,15 @@ exec $out/bin/johnny-blog-dg
 EOF
     
     chmod +x $out/bin/johnny-blog-dg-service
+    
+    # Create backup script (placeholder)
+    cat > $out/bin/johnny-blog-dg-backup << EOF
+#!/bin/sh
+echo "Backup service placeholder - no backup needed for encrypted data"
+exit 0
+EOF
+    
+    chmod +x $out/bin/johnny-blog-dg-backup
   '';
 
   meta = with lib; {
