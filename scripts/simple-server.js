@@ -58,6 +58,106 @@ app.get('/api/metadata/images', async (req, res) => {
   }
 });
 
+// Helper function to extract frontmatter from MDX content
+function extractFrontmatter(content) {
+  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (!frontmatterMatch) return {};
+  
+  const frontmatter = {};
+  const lines = frontmatterMatch[1].split('\n');
+  
+  for (const line of lines) {
+    const match = line.match(/^(\w+):\s*(.+)$/);
+    if (match) {
+      const key = match[1];
+      let value = match[2].trim();
+      
+      // Remove quotes if present
+      if ((value.startsWith("'") && value.endsWith("'")) || 
+          (value.startsWith('"') && value.endsWith('"'))) {
+        value = value.slice(1, -1);
+      }
+      
+      // Handle arrays
+      if (value.startsWith('[') && value.endsWith(']')) {
+        try {
+          value = JSON.parse(value);
+        } catch (e) {
+          // If JSON parsing fails, treat as string
+        }
+      }
+      
+      frontmatter[key] = value;
+    }
+  }
+  
+  return frontmatter;
+}
+
+// Get posts list (compatible with frontend)
+app.get('/api/posts', async (req, res) => {
+  try {
+    const metadataPath = path.join(__dirname, '../metadata/posts.json');
+    if (await fs.pathExists(metadataPath)) {
+      const metadata = await fs.readJson(metadataPath);
+      const privateKey = process.env.AGE_PRIVATE_KEY;
+      
+      if (!privateKey) {
+        return res.status(500).json({ error: 'AGE_PRIVATE_KEY not configured' });
+      }
+      
+      // Transform to match frontend expectations
+      const posts = await Promise.all(metadata.posts.map(async (post) => {
+        // Clean up titles by removing date prefixes like "2020 04 13"
+        let cleanTitle = post.title;
+        const dateMatch = post.title.match(/^\d{4}\s+\d{1,2}\s+\d{1,2}\s+(.+)$/);
+        if (dateMatch) {
+          cleanTitle = dateMatch[1];
+        }
+        
+        // Try to get cover image from frontmatter
+        let coverImage = post.coverImage;
+        let tags = post.tags || [];
+        let date = post.date;
+        
+        try {
+          const encryptedPath = path.join(__dirname, '../data/posts', `${post.slug}.mdx.age`);
+          if (await fs.pathExists(encryptedPath)) {
+            const decrypted = execSync(`age -d -i <(echo "${privateKey}") "${encryptedPath}"`, {
+              shell: '/bin/bash',
+              encoding: 'utf8'
+            });
+            
+            const frontmatter = extractFrontmatter(decrypted);
+            coverImage = frontmatter.coverImage || coverImage;
+            tags = frontmatter.tags || tags;
+            date = frontmatter.date || date;
+          }
+        } catch (error) {
+          console.error(`Error reading post ${post.slug}:`, error.message);
+        }
+        
+        return {
+          slug: post.slug,
+          title: cleanTitle,
+          date: date,
+          tags: Array.isArray(tags) ? tags : [],
+          categories: Array.isArray(tags) ? tags : [], // Use tags as categories for now
+          coverImage: coverImage,
+          thumbnailExists: !!coverImage
+        };
+      }));
+      
+      res.json(posts);
+    } else {
+      res.json([]);
+    }
+  } catch (error) {
+    console.error('Error loading posts:', error);
+    res.status(500).json({ error: 'Failed to load posts' });
+  }
+});
+
 // Get decrypted post
 app.get('/api/posts/:slug', async (req, res) => {
   try {
@@ -79,12 +179,75 @@ app.get('/api/posts/:slug', async (req, res) => {
       encoding: 'utf8'
     });
     
-    res.setHeader('Content-Type', 'text/markdown');
-    res.send(decrypted);
+    // Parse frontmatter and content
+    const frontmatter = extractFrontmatter(decrypted);
+    const content = decrypted.replace(/^---\n[\s\S]*?\n---\n/, '');
+    
+    // Return JSON with parsed data
+    res.json({
+      slug: slug,
+      title: frontmatter.title || 'Untitled',
+      date: frontmatter.date || '',
+      tags: Array.isArray(frontmatter.tags) ? frontmatter.tags : [],
+      categories: Array.isArray(frontmatter.categories) ? frontmatter.categories : [],
+      coverImage: frontmatter.coverImage || null,
+      summary: frontmatter.summary || '',
+      content: content,
+      metadata: {
+        title: frontmatter.title || 'Untitled',
+        date: frontmatter.date || '',
+        tags: Array.isArray(frontmatter.tags) ? frontmatter.tags : [],
+        categories: Array.isArray(frontmatter.categories) ? frontmatter.categories : [],
+        coverImage: frontmatter.coverImage || null,
+        summary: frontmatter.summary || ''
+      }
+    });
     
   } catch (error) {
     console.error('Error loading post:', error);
     res.status(500).json({ error: 'Failed to load post' });
+  }
+});
+
+// Serve images directly from /images/ for frontend compatibility
+app.get('/images/:filename', async (req, res) => {
+  try {
+    const { filename } = req.params;
+    const encryptedPath = path.join(__dirname, '../data/images', `${filename}.age`);
+    
+    if (!(await fs.pathExists(encryptedPath))) {
+      return res.status(404).json({ error: 'Image not found' });
+    }
+    
+    // Decrypt the image
+    const privateKey = process.env.AGE_PRIVATE_KEY;
+    if (!privateKey) {
+      return res.status(500).json({ error: 'AGE_PRIVATE_KEY not configured' });
+    }
+    
+    const decrypted = execSync(`age -d -i <(echo "${privateKey}") "${encryptedPath}"`, {
+      shell: '/bin/bash',
+      encoding: 'buffer'
+    });
+    
+    // Set appropriate content type
+    const ext = path.extname(filename).toLowerCase();
+    const types = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.webp': 'image/webp',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml'
+    };
+    
+    res.setHeader('Content-Type', types[ext] || 'application/octet-stream');
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    res.send(decrypted);
+    
+  } catch (error) {
+    console.error('Error loading image:', error);
+    res.status(500).json({ error: 'Failed to load image' });
   }
 });
 
@@ -139,3 +302,5 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
+

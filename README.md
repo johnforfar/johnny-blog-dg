@@ -1,105 +1,69 @@
-# Johnny Blog Datagraph (DG)
+# Johnny Blog Datagraph
 
-🚀 **The First Production Encrypted Datagraph on Xnode Infrastructure**
+🚀 **Encrypted Blog Backend for Xnode Deployment**
 
-A revolutionary approach to decentralized data storage combining:
+A secure, encrypted backend that serves blog content with:
 - **End-to-end encryption** (Age encryption)
 - **High compression** (Zstandard)
-- **GitHub-compliant chunking** (Files <100MB)
-- **Bare metal performance** (Xnode deployment)
-- **Distributed backup** (Git-based)
+- **GitHub-compliant storage** (Files <100MB)
+- **Fast API server** (Bare metal performance)
 
-## 🔒 Security Features
+## 🔒 Security
 
-- **No key files** - All encryption keys stored as environment variables
-- **Public repository** - Encrypted data safe for public GitHub
-- **Chunked storage** - Large files split into GitHub-compliant pieces
-- **Integrity verification** - SHA256 hashes for each chunk
-
-## 📊 GitHub Compliance
-
-- ✅ **File size**: All files <100MB (chunked)
-- ✅ **Repository size**: <1GB total (compressed)
-- ✅ **No LFS needed** - Standard git storage
-- ✅ **Public safe** - All data encrypted
-
-## 🏗️ Architecture
-
-```
-johnny-blog-dg/
-├── data/                    # Encrypted data (chunked)
-│   ├── images/             # Encrypted image chunks
-│   ├── posts/              # Encrypted markdown chunks  
-│   └── database/           # Encrypted database chunks
-├── metadata/               # Public metadata (unencrypted)
-│   ├── images.json        # Image registry
-│   ├── posts.json         # Post registry
-│   └── chunks.json        # Chunk mapping
-├── api/                    # Fast API server
-├── scripts/                # Encryption/decryption tools
-└── nix/                    # NixOS deployment
-```
+- **No secrets in code** - All keys stored as environment variables
+- **Public repository safe** - All data encrypted before GitHub
+- **Internal API only** - Backend not exposed to internet
 
 ## 🚀 Quick Start
 
 ```bash
-# Clone and setup
+# Clone repository
 git clone https://github.com/johnforfar/johnny-blog-dg
 cd johnny-blog-dg
 
-# Set encryption key (never commit this!)
-export AGE_PRIVATE_KEY="age1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+# Install dependencies
+npm install
 
-# Start datagraph API
+# Set environment variables (create .env file)
+echo "AGE_PRIVATE_KEY=your_age_private_key_here" > .env
+
+# Start API server
 npm run dev
 ```
 
 ## 🔧 Environment Variables
 
+Create a `.env` file with:
 ```bash
-# Required
-AGE_PRIVATE_KEY=age1...          # Age private key (from env var)
-AGE_PUBLIC_KEY=age1...           # Age public key (from env var)
-
-# Optional
-DATAGRAPH_PORT=3007              # API server port
-CHUNK_SIZE=10485760              # 10MB chunks (GitHub safe)
-COMPRESSION_LEVEL=19             # Zstd compression level
+AGE_PRIVATE_KEY=your_age_private_key_here
+DATAGRAPH_PORT=3007
 ```
-
-## 📈 Performance
-
-- **Encryption**: ~100MB/s (Age)
-- **Compression**: ~500MB/s (Zstd)
-- **API Response**: <50ms (bare metal)
-- **Storage reduction**: 70-90% (compression + chunking)
 
 ## 🌐 Xnode Deployment
 
-```nix
-# nix/nixos-module.nix
-{
-  services.johnny-blog-dg = {
-    enable = true;
-    port = 3007;
-    agePrivateKey = config.age.secrets.datagraph-key.path;
-  };
-}
+Deploy both frontend and backend on same Xnode:
+- **Frontend**: Port 3000 (public access)
+- **Backend**: Port 3007 (internal only)
+- **Communication**: Frontend → localhost:3007
+
+## 📁 Project Structure
+
+```
+johnny-blog-dg/
+├── data/           # Encrypted content (.age files)
+├── metadata/       # Public metadata (JSON)
+├── api/           # API server
+├── scripts/       # Tools
+└── nix/           # NixOS deployment
 ```
 
-## 🔄 Data Flow
+## 🛡️ Security Features
 
-1. **Upload**: File → Compress → Encrypt → Chunk → Store
-2. **Download**: Chunks → Decrypt → Decompress → Reassemble → Serve
-3. **Backup**: Git push → GitHub → Distributed storage
-
-## 🛡️ Security Model
-
-- **Zero-knowledge**: Server never sees unencrypted data
-- **Keyless storage**: No private keys in repository
-- **Public safe**: All data encrypted before GitHub
-- **Integrity**: Cryptographic verification of all chunks
+- **Encrypted storage**: All content encrypted with Age
+- **No key exposure**: Private keys never committed
+- **Internal API**: Backend only accessible from localhost
+- **GitHub safe**: All data encrypted before commit
 
 ---
 
-**Built for the decentralized future** 🌟
+**Secure, fast, and decentralized** 🌟

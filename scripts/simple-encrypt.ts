@@ -185,3 +185,5 @@ if (require.main === module) {
 }
 
 export { SimpleEncryptor };
+
+

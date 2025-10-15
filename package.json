@@ -25,21 +25,22 @@
   "author": "John Forfar",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "helmet": "^7.1.0",
     "compression": "^1.7.4",
-    "sharp": "^0.33.0",
-    "fs-extra": "^11.1.1"
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "fs-extra": "^11.1.1",
+    "helmet": "^7.1.0",
+    "js-yaml": "^4.1.0",
+    "sharp": "^0.33.0"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/express": "^4.17.21",
-    "@types/cors": "^2.8.17",
     "@types/compression": "^1.7.5",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
     "@types/fs-extra": "^11.0.4",
-    "typescript": "^5.3.0",
-    "ts-node": "^10.9.0"
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.3.0"
   },
   "engines": {
     "node": ">=18.0.0"
